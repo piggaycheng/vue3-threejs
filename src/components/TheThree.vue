@@ -17,10 +17,17 @@ const cubeControls = {
   z: 0,
   xSpeed: 0.1,
   zSpeed: 0.1,
+};
+
+const cameraControls = {
   lock: true
 };
 
 const gui = new GUI();
+const cameraFolder = gui.addFolder('Camera');
+cameraFolder.add(cameraControls, 'lock').onChange((value: boolean) => {
+  cameraControls.lock = value;
+});
 const cubeFolder = gui.addFolder('Cube');
 cubeFolder.add(cubeControls, 'x', -10, 10).onChange((value: number) => {
   cube.position.setX(value);
@@ -42,9 +49,6 @@ cubeFolder.add(cubeControls, 'xSpeed', -1, 1).onChange((value: number) => {
 });
 cubeFolder.add(cubeControls, 'zSpeed', -1, 1).onChange((value: number) => {
   cubeControls.zSpeed = value;
-});
-cubeFolder.add(cubeControls, 'lock', -1, 1).onChange((value: boolean) => {
-  cubeControls.lock = value;
 });
 
 document.addEventListener('keydown', (event) => {
@@ -68,7 +72,7 @@ document.addEventListener('keydown', (event) => {
   cube.position.setX(cube.position.x + deltaX);
   cube.position.setZ(cube.position.z + deltaZ);
 
-  if (!cubeControls.lock) {
+  if (!cameraControls.lock) {
     camera.position.setX(camera.position.x + deltaX);
     camera.position.setZ(camera.position.z + deltaZ);
   }
