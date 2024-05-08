@@ -1,25 +1,52 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import * as THREE from 'three';
+import GUI from 'lil-gui';
 
-const threeContainer = ref<HTMLDivElement>();
+const threeCanvas = ref<HTMLDivElement>();
+let camera: THREE.PerspectiveCamera, scene: THREE.Scene, renderer: THREE.WebGLRenderer;
+
+const cameraControls = {
+  x: 5,
+  y: 5,
+  z: 5,
+};
+
+const gui = new GUI();
+const cameraFolder = gui.addFolder('Camera');
+cameraFolder.add(cameraControls, 'x', -10, 10).onChange((value: number) => {
+  camera.position.setX(value);
+  camera.lookAt(scene.position);
+  renderer.render(scene, camera);
+});
+cameraFolder.add(cameraControls, 'y', -10, 10).onChange((value: number) => {
+  camera.position.setY(value);
+  camera.lookAt(scene.position);
+  renderer.render(scene, camera);
+});
+cameraFolder.add(cameraControls, 'z', -10, 10).onChange((value: number) => {
+  camera.position.setZ(value);
+  camera.lookAt(scene.position);
+  renderer.render(scene, camera);
+});
+
 
 onMounted(() => {
   initThree();
 });
 
 function initThree() {
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(75, threeContainer.value!.clientWidth / threeContainer.value!.clientHeight, 0.1, 1000);
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(75, threeCanvas.value!.clientWidth / threeCanvas.value!.clientHeight, 0.1, 1000);
   camera.position.set(5, 5, 5)
   camera.lookAt(scene.position);
 
   const axesHelper = new THREE.AxesHelper(5);
   scene.add(axesHelper);
 
-  const renderer = new THREE.WebGLRenderer();
-  renderer.setSize(threeContainer.value!.clientWidth, threeContainer.value!.clientHeight);
-  threeContainer.value!.appendChild(renderer.domElement);
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(threeCanvas.value!.clientWidth, threeCanvas.value!.clientHeight);
+  threeCanvas.value!.appendChild(renderer.domElement);
 
   const geometry = new THREE.BoxGeometry(1, 1, 1);
   const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
@@ -34,7 +61,14 @@ function initThree() {
   spotLight.target = cube;
   scene.add(spotLight);
 
-  animate();
+  const size = 10;
+  const divisions = 10;
+  const gridHelper = new THREE.GridHelper(size, divisions);
+  scene.add(gridHelper);
+
+  renderer.render(scene, camera);
+
+  // animate();
 
   function animate() {
     requestAnimationFrame(animate);
@@ -48,7 +82,7 @@ function initThree() {
 </script>
 
 <template>
-  <div ref="threeContainer" class="three-container">
+  <div ref="threeCanvas" class="three-container">
   </div>
 </template>
 
