@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import * as THREE from 'three';
 import GUI from 'lil-gui';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const threeCanvas = ref<HTMLDivElement>();
 let camera: THREE.PerspectiveCamera,
@@ -17,6 +18,7 @@ const cubeControls = {
   z: 0,
   xSpeed: 0.1,
   zSpeed: 0.1,
+  visible: false,
 };
 
 const cameraControls = {
@@ -50,6 +52,9 @@ cubeFolder.add(cubeControls, 'xSpeed', -1, 1).onChange((value: number) => {
 cubeFolder.add(cubeControls, 'zSpeed', -1, 1).onChange((value: number) => {
   cubeControls.zSpeed = value;
 });
+cubeFolder.add(cubeControls, 'visible').onChange((value: boolean) => {
+  cube.visible = value;
+});
 
 document.addEventListener('keydown', (event) => {
   let deltaX = 0;
@@ -80,6 +85,7 @@ document.addEventListener('keydown', (event) => {
 
 onMounted(() => {
   initThree();
+  loadModel();
 });
 
 function initThree() {
@@ -99,6 +105,7 @@ function initThree() {
   const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
   cube = new THREE.Mesh(geometry, material);
   scene.add(cube);
+  cube.visible = cubeControls.visible;
 
   const ambientLight = new THREE.AmbientLight(0x404040);
   scene.add(ambientLight);
@@ -136,6 +143,14 @@ function initThree() {
 function render() {
   renderer.render(scene, camera);
 }
+
+function loadModel() {
+  const loader = new GLTFLoader();
+  loader.load('3dModels/Soldier.glb', (gltf) => {
+    scene.add(gltf.scene);
+  });
+}
+
 </script>
 
 <template>
