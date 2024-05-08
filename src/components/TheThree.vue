@@ -90,6 +90,8 @@ onMounted(() => {
 
 function initThree() {
   scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xa0a0a0);
+  scene.fog = new THREE.Fog(0xa0a0a0, 10, 50);
   camera = new THREE.PerspectiveCamera(75, threeCanvas.value!.clientWidth / threeCanvas.value!.clientHeight, 0.1, 1000);
   camera.position.set(5, 5, 5)
   camera.lookAt(scene.position);
@@ -99,6 +101,7 @@ function initThree() {
 
   renderer = new THREE.WebGLRenderer();
   renderer.setSize(threeCanvas.value!.clientWidth, threeCanvas.value!.clientHeight);
+  renderer.shadowMap.enabled = true;
   threeCanvas.value!.appendChild(renderer.domElement);
 
   const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -107,22 +110,40 @@ function initThree() {
   scene.add(cube);
   cube.visible = cubeControls.visible;
 
-  const ambientLight = new THREE.AmbientLight(0x404040);
-  scene.add(ambientLight);
+  // const ambientLight = new THREE.AmbientLight(0x404040);
+  // scene.add(ambientLight);
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x8d8d8d, 3);
+  hemiLight.position.set(0, 20, 0);
+  scene.add(hemiLight);
 
-  const spotLight = new THREE.SpotLight(0xffffff, 5);
-  spotLight.position.set(3, 0, 0);
-  spotLight.target = cube;
-  scene.add(spotLight);
+  // const spotLight = new THREE.SpotLight(0xffffff, 5);
+  // spotLight.position.set(3, 0, 0);
+  // spotLight.target = cube;
+  // scene.add(spotLight);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 3);
+  dirLight.position.set(- 3, 10, - 10);
+  dirLight.castShadow = true;
+  dirLight.shadow.camera.top = 2;
+  dirLight.shadow.camera.bottom = - 2;
+  dirLight.shadow.camera.left = - 2;
+  dirLight.shadow.camera.right = 2;
+  dirLight.shadow.camera.near = 0.1;
+  dirLight.shadow.camera.far = 40;
+  scene.add(dirLight);
 
-  const size = 10;
-  const divisions = 10;
-  const gridHelper = new THREE.GridHelper(size, divisions);
-  scene.add(gridHelper);
+  // const size = 10;
+  // const divisions = 10;
+  // const gridHelper = new THREE.GridHelper(size, divisions);
+  // scene.add(gridHelper);
 
   orbitControls = new OrbitControls(camera, renderer.domElement);
   orbitControls.target = cube.position;
   orbitControls.listenToKeyEvents(window);
+
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshPhongMaterial({ color: 0xcbcbcb, depthWrite: false }));
+  mesh.rotation.x = - Math.PI / 2;
+  mesh.receiveShadow = true;
+  scene.add(mesh);
 
   renderer.render(scene, camera);
 
@@ -147,7 +168,13 @@ function render() {
 function loadModel() {
   const loader = new GLTFLoader();
   loader.load('3dModels/Soldier.glb', (gltf) => {
-    scene.add(gltf.scene);
+    const model = gltf.scene;
+    scene.add(model);
+
+    model.traverse(function (object) {
+      if ((object as THREE.Mesh).isMesh) object.castShadow = true;
+    });
+    console.log(gltf);
   });
 }
 
