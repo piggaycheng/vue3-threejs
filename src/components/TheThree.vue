@@ -22,15 +22,15 @@ function initThree() {
   threeContainer.value!.appendChild(renderer.domElement);
 
   const geometry = new THREE.BoxGeometry(1, 1, 1);
-  const material = new THREE.MeshPhongMaterial({ color: 0xff00ff });
+  const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
   const cube = new THREE.Mesh(geometry, material);
   scene.add(cube);
 
   const ambientLight = new THREE.AmbientLight(0x404040);
   scene.add(ambientLight);
 
-  const spotLight = new THREE.SpotLight(0xffffff);
-  spotLight.position.set(0, 3, 3);
+  const spotLight = new THREE.SpotLight(0xffffff, 5);
+  spotLight.position.set(3, 0, 0);
   spotLight.target = cube;
   scene.add(spotLight);
 
