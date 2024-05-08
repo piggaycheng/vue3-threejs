@@ -17,6 +17,7 @@ const cubeControls = {
   z: 0,
   xSpeed: 0.1,
   zSpeed: 0.1,
+  lock: true
 };
 
 const gui = new GUI();
@@ -42,27 +43,35 @@ cubeFolder.add(cubeControls, 'xSpeed', -1, 1).onChange((value: number) => {
 cubeFolder.add(cubeControls, 'zSpeed', -1, 1).onChange((value: number) => {
   cubeControls.zSpeed = value;
 });
+cubeFolder.add(cubeControls, 'lock', -1, 1).onChange((value: boolean) => {
+  cubeControls.lock = value;
+});
 
 document.addEventListener('keydown', (event) => {
+  let deltaX = 0;
+  let deltaZ = 0;
   switch (event.key) {
     case 'w':
-      cube.position.setZ(cube.position.z - cubeControls.zSpeed);
-      camera.position.setZ(camera.position.z - cubeControls.zSpeed);
+      deltaZ = -1 * cubeControls.zSpeed;
       break;
     case 's':
-      cube.position.setZ(cube.position.z + cubeControls.zSpeed);
-      camera.position.setZ(camera.position.z + cubeControls.zSpeed);
+      deltaZ = cubeControls.zSpeed;
       break;
     case 'a':
-      cube.position.setX(cube.position.x - cubeControls.xSpeed);
-      camera.position.setX(camera.position.x - cubeControls.xSpeed);
+      deltaX = -1 * cubeControls.xSpeed;
       break;
     case 'd':
-      cube.position.setX(cube.position.x + cubeControls.xSpeed);
-      camera.position.setX(camera.position.x + cubeControls.xSpeed);
+      deltaX = cubeControls.xSpeed;
       break;
   }
-  // orbitControls.target = cube.position;
+
+  cube.position.setX(cube.position.x + deltaX);
+  cube.position.setZ(cube.position.z + deltaZ);
+
+  if (!cubeControls.lock) {
+    camera.position.setX(camera.position.x + deltaX);
+    camera.position.setZ(camera.position.z + deltaZ);
+  }
 });
 
 onMounted(() => {
