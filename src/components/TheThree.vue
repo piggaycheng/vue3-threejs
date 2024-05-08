@@ -2,9 +2,11 @@
 import { ref, onMounted } from 'vue';
 import * as THREE from 'three';
 import GUI from 'lil-gui';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { c } from 'node_modules/vite/dist/node/types.d-aGj9QkWt';
 
 const threeCanvas = ref<HTMLDivElement>();
-let camera: THREE.PerspectiveCamera, scene: THREE.Scene, renderer: THREE.WebGLRenderer;
+let camera: THREE.PerspectiveCamera, scene: THREE.Scene, renderer: THREE.WebGLRenderer, orbitControls: OrbitControls;
 
 const cameraControls = {
   x: 5,
@@ -16,17 +18,17 @@ const gui = new GUI();
 const cameraFolder = gui.addFolder('Camera');
 cameraFolder.add(cameraControls, 'x', -10, 10).onChange((value: number) => {
   camera.position.setX(value);
-  camera.lookAt(scene.position);
+  orbitControls.update();
   renderer.render(scene, camera);
 });
 cameraFolder.add(cameraControls, 'y', -10, 10).onChange((value: number) => {
   camera.position.setY(value);
-  camera.lookAt(scene.position);
+  orbitControls.update();
   renderer.render(scene, camera);
 });
 cameraFolder.add(cameraControls, 'z', -10, 10).onChange((value: number) => {
   camera.position.setZ(value);
-  camera.lookAt(scene.position);
+  orbitControls.update();
   renderer.render(scene, camera);
 });
 
@@ -66,15 +68,20 @@ function initThree() {
   const gridHelper = new THREE.GridHelper(size, divisions);
   scene.add(gridHelper);
 
+  orbitControls = new OrbitControls(camera, renderer.domElement);
+  orbitControls.listenToKeyEvents(window);
+
   renderer.render(scene, camera);
 
-  // animate();
+  animate();
 
   function animate() {
     requestAnimationFrame(animate);
 
     cube.rotation.x += 0.01;
     cube.rotation.y += 0.01;
+
+    orbitControls.update();
 
     renderer.render(scene, camera);
   }
