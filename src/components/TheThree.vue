@@ -3,35 +3,67 @@ import { ref, onMounted } from 'vue';
 import * as THREE from 'three';
 import GUI from 'lil-gui';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { c } from 'node_modules/vite/dist/node/types.d-aGj9QkWt';
 
 const threeCanvas = ref<HTMLDivElement>();
-let camera: THREE.PerspectiveCamera, scene: THREE.Scene, renderer: THREE.WebGLRenderer, orbitControls: OrbitControls;
+let camera: THREE.PerspectiveCamera,
+  scene: THREE.Scene,
+  renderer: THREE.WebGLRenderer,
+  orbitControls: OrbitControls,
+  cube: THREE.Mesh;
 
-const cameraControls = {
-  x: 5,
-  y: 5,
-  z: 5,
+const cubeControls = {
+  x: 0,
+  y: 0,
+  z: 0,
+  xSpeed: 0.1,
+  zSpeed: 0.1,
 };
 
 const gui = new GUI();
-const cameraFolder = gui.addFolder('Camera');
-cameraFolder.add(cameraControls, 'x', -10, 10).onChange((value: number) => {
-  camera.position.setX(value);
+const cubeFolder = gui.addFolder('Cube');
+cubeFolder.add(cubeControls, 'x', -10, 10).onChange((value: number) => {
+  cube.position.setX(value);
   orbitControls.update();
-  renderer.render(scene, camera);
+  render();
 });
-cameraFolder.add(cameraControls, 'y', -10, 10).onChange((value: number) => {
-  camera.position.setY(value);
+cubeFolder.add(cubeControls, 'y', -10, 10).onChange((value: number) => {
+  cube.position.setY(value);
   orbitControls.update();
-  renderer.render(scene, camera);
+  render();
 });
-cameraFolder.add(cameraControls, 'z', -10, 10).onChange((value: number) => {
-  camera.position.setZ(value);
+cubeFolder.add(cubeControls, 'z', -10, 10).onChange((value: number) => {
+  cube.position.setZ(value);
   orbitControls.update();
-  renderer.render(scene, camera);
+  render();
+});
+cubeFolder.add(cubeControls, 'xSpeed', -1, 1).onChange((value: number) => {
+  cubeControls.xSpeed = value;
+});
+cubeFolder.add(cubeControls, 'zSpeed', -1, 1).onChange((value: number) => {
+  cubeControls.zSpeed = value;
 });
 
+document.addEventListener('keydown', (event) => {
+  switch (event.key) {
+    case 'w':
+      cube.position.setZ(cube.position.z - cubeControls.zSpeed);
+      camera.position.setZ(camera.position.z - cubeControls.zSpeed);
+      break;
+    case 's':
+      cube.position.setZ(cube.position.z + cubeControls.zSpeed);
+      camera.position.setZ(camera.position.z + cubeControls.zSpeed);
+      break;
+    case 'a':
+      cube.position.setX(cube.position.x - cubeControls.xSpeed);
+      camera.position.setX(camera.position.x - cubeControls.xSpeed);
+      break;
+    case 'd':
+      cube.position.setX(cube.position.x + cubeControls.xSpeed);
+      camera.position.setX(camera.position.x + cubeControls.xSpeed);
+      break;
+  }
+  // orbitControls.target = cube.position;
+});
 
 onMounted(() => {
   initThree();
@@ -52,7 +84,7 @@ function initThree() {
 
   const geometry = new THREE.BoxGeometry(1, 1, 1);
   const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-  const cube = new THREE.Mesh(geometry, material);
+  cube = new THREE.Mesh(geometry, material);
   scene.add(cube);
 
   const ambientLight = new THREE.AmbientLight(0x404040);
@@ -69,6 +101,7 @@ function initThree() {
   scene.add(gridHelper);
 
   orbitControls = new OrbitControls(camera, renderer.domElement);
+  orbitControls.target = cube.position;
   orbitControls.listenToKeyEvents(window);
 
   renderer.render(scene, camera);
@@ -83,8 +116,12 @@ function initThree() {
 
     orbitControls.update();
 
-    renderer.render(scene, camera);
+    render();
   }
+}
+
+function render() {
+  renderer.render(scene, camera);
 }
 </script>
 
