@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import GUI from 'lil-gui';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { l } from 'node_modules/vite/dist/node/types.d-aGj9QkWt';
 
 const threeCanvas = ref<HTMLDivElement>();
 let camera: THREE.PerspectiveCamera,
@@ -17,7 +18,7 @@ let model: THREE.Object3D,
   walkAction: THREE.AnimationAction,
   runAction: THREE.AnimationAction,
   tPoseAction: THREE.AnimationAction,
-  actions: THREE.AnimationAction[],
+  actionsMapping: Map<string, THREE.AnimationAction>,
   clock: THREE.Clock = new THREE.Clock()
 
 const cubeControls = {
@@ -34,7 +35,10 @@ const cameraControls = {
 };
 
 const characterControls = {
-  action: 'TPose'
+  action: 'Idle',
+  idleWeight: 1,
+  walkWeight: 0,
+  runWeight: 0,
 }
 
 const gui = new GUI();
@@ -42,6 +46,7 @@ const cameraFolder = gui.addFolder('Camera');
 cameraFolder.add(cameraControls, 'lock').onChange((value: boolean) => {
   cameraControls.lock = value;
 });
+cameraFolder.close();
 const cubeFolder = gui.addFolder('Cube');
 cubeFolder.add(cubeControls, 'x', -10, 10).onChange((value: number) => {
   cube.position.setX(value);
@@ -67,35 +72,26 @@ cubeFolder.add(cubeControls, 'zSpeed', -1, 1).onChange((value: number) => {
 cubeFolder.add(cubeControls, 'visible').onChange((value: boolean) => {
   cube.visible = value;
 });
+cubeFolder.close();
 const characterFolder = gui.addFolder('Character');
-characterFolder.add(characterControls, 'action', ['Idle', 'Walk', 'Run', 'TPose']).onChange((value: string) => {
+let lastAction = 'idleAction';
+characterFolder.add(characterControls, 'action', { 'Idle': 'idleAction', 'Walk': 'walkAction', 'Run': 'runAction' }).onChange((value: string) => {
+  executeCrossFade(actionsMapping.get(lastAction)!, actionsMapping.get(value)!, 1);
+
   characterControls.action = value;
-  switch (value) {
-    case 'Idle':
-      idleAction.play();
-      walkAction.stop();
-      runAction.stop();
-      tPoseAction.stop();
-      break;
-    case 'Walk':
-      idleAction.stop();
-      walkAction.play();
-      runAction.stop();
-      tPoseAction.stop();
-      break;
-    case 'Run':
-      idleAction.stop();
-      walkAction.stop();
-      runAction.play();
-      tPoseAction.stop();
-      break;
-    case 'TPose':
-      idleAction.stop();
-      walkAction.stop();
-      runAction.stop();
-      tPoseAction.play();
-      break;
-  }
+  lastAction = value;
+});
+characterFolder.add(characterControls, 'idleWeight', 0, 1).listen().onChange((value: number) => {
+  characterControls.idleWeight = value;
+  setWeight(idleAction, value);
+});
+characterFolder.add(characterControls, 'walkWeight', 0, 1).listen().onChange((value: number) => {
+  characterControls.walkWeight = value;
+  setWeight(walkAction, value);
+});
+characterFolder.add(characterControls, 'runWeight', 0, 1).listen().onChange((value: number) => {
+  characterControls.runWeight = value;
+  setWeight(runAction, value);
 });
 
 document.addEventListener('keydown', (event) => {
@@ -206,6 +202,10 @@ function initThree() {
     const mixerUpdateDelta = clock.getDelta();
     if (mixer) mixer.update(mixerUpdateDelta);
 
+    if (idleAction) characterControls.idleWeight = idleAction.getEffectiveWeight();
+    if (walkAction) characterControls.walkWeight = walkAction.getEffectiveWeight();
+    if (runAction) characterControls.runWeight = runAction.getEffectiveWeight();
+
     render();
   }
 }
@@ -224,13 +224,39 @@ function loadModel() {
     idleAction = mixer.clipAction(gltf.animations[0]);
     walkAction = mixer.clipAction(gltf.animations[3]);
     runAction = mixer.clipAction(gltf.animations[1]);
-    tPoseAction = mixer.clipAction(gltf.animations[2]);
+
+    actionsMapping = new Map([
+      ['idleAction', idleAction],
+      ['walkAction', walkAction],
+      ['runAction', runAction]
+    ]);
+    actionsMapping.forEach((action) => {
+      action.setEffectiveWeight(0);
+      action.play();
+    });
+    idleAction.setEffectiveWeight(1);
 
     model.traverse(function (object) {
       if ((object as THREE.Mesh).isMesh) object.castShadow = true;
     });
     console.log(gltf);
   });
+}
+
+function executeCrossFade(startAction: THREE.AnimationAction, endAction: THREE.AnimationAction, duration: number) {
+  // Not only the start action, but also the end action must get a weight of 1 before fading
+  // (concerning the start action this is already guaranteed in this place)
+  setWeight(endAction, 1);
+  endAction.time = 0;
+
+  // Crossfade with warping - you can also try without warping by setting the third parameter to false
+  startAction.crossFadeTo(endAction, duration, true);
+}
+
+function setWeight(action: THREE.AnimationAction, weight: number) {
+  action.enabled = true;
+  action.setEffectiveTimeScale(1);
+  action.setEffectiveWeight(weight);
 }
 
 </script>
