@@ -4,7 +4,6 @@ import * as THREE from 'three';
 import GUI from 'lil-gui';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { mod } from 'three/examples/jsm/nodes/Nodes.js';
 
 const threeCanvas = ref<HTMLDivElement>();
 let camera: THREE.PerspectiveCamera,
@@ -36,8 +35,8 @@ const characterControls = {
   idleWeight: 1,
   walkWeight: 0,
   runWeight: 0,
-  xSpeed: 0.1,
-  zSpeed: 0.1,
+  speed: 0.1,
+  rotationSpeed: 0.1,
 }
 
 const gui = new GUI();
@@ -80,33 +79,36 @@ characterFolder.add(characterControls, 'runWeight', 0, 1).listen().onChange((val
   characterControls.runWeight = value;
   setWeight(runAction, value);
 });
-characterFolder.add(characterControls, 'xSpeed', 0, 1).onChange((value: number) => {
-  characterControls.xSpeed = value;
+characterFolder.add(characterControls, 'speed', 0, 1).onChange((value: number) => {
+  characterControls.speed = value;
 });
-characterFolder.add(characterControls, 'zSpeed', 0, 1).onChange((value: number) => {
-  characterControls.zSpeed = value;
+characterFolder.add(characterControls, 'rotationSpeed', 0, 1).onChange((value: number) => {
+  characterControls.rotationSpeed = value;
 });
 
 document.addEventListener('keydown', (event) => {
   let deltaX = 0;
   let deltaZ = 0;
+  let deltaRadian = 0;
+  let direction = new THREE.Vector3();
+  model.getWorldDirection(direction);
+
   switch (event.key) {
     case 'w':
-      deltaZ = -1 * characterControls.zSpeed;
+      model.position.add(direction.multiplyScalar(-1 * characterControls.speed));
       break;
     case 's':
-      deltaZ = characterControls.zSpeed;
+      model.position.add(direction.multiplyScalar(characterControls.speed));
       break;
     case 'a':
-      deltaX = -1 * characterControls.xSpeed;
+      deltaRadian = characterControls.rotationSpeed;
       break;
     case 'd':
-      deltaX = characterControls.xSpeed;
+      deltaRadian = -1 * characterControls.rotationSpeed;
       break;
   }
 
-  model.position.setX(model.position.x + deltaX);
-  model.position.setZ(model.position.z + deltaZ);
+  model.rotation.y += deltaRadian;
 
   if (!cameraControls.lock) {
     camera.position.setX(camera.position.x + deltaX);
