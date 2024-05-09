@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import GUI from 'lil-gui';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { dir } from 'console';
 
 const threeCanvas = ref<HTMLDivElement>();
 let camera: THREE.PerspectiveCamera,
@@ -87,18 +88,18 @@ characterFolder.add(characterControls, 'rotationSpeed', 0, 1).onChange((value: n
 });
 
 document.addEventListener('keydown', (event) => {
-  let deltaX = 0;
-  let deltaZ = 0;
   let deltaRadian = 0;
   let direction = new THREE.Vector3();
   model.getWorldDirection(direction);
 
   switch (event.key) {
     case 'w':
-      model.position.add(direction.multiplyScalar(-1 * characterControls.speed));
+      direction = direction.multiplyScalar(-1 * characterControls.speed);
+      model.position.add(direction);
       break;
     case 's':
-      model.position.add(direction.multiplyScalar(characterControls.speed));
+      direction = direction.multiplyScalar(characterControls.speed);
+      model.position.add(direction);
       break;
     case 'a':
       deltaRadian = characterControls.rotationSpeed;
@@ -108,11 +109,11 @@ document.addEventListener('keydown', (event) => {
       break;
   }
 
+
   model.rotation.y += deltaRadian;
 
-  if (!cameraControls.lock) {
-    camera.position.setX(camera.position.x + deltaX);
-    camera.position.setZ(camera.position.z + deltaZ);
+  if (!cameraControls.lock && (event.key === 'w' || event.key === 's')) {
+    camera.position.add(direction);
   }
 });
 
@@ -158,12 +159,14 @@ function initThree() {
   // spotLight.target = cube;
   // scene.add(spotLight);
   const dirLight = new THREE.DirectionalLight(0xffffff, 3);
+  const shadowSize = 50;
   dirLight.position.set(- 3, 10, - 10);
   dirLight.castShadow = true;
-  dirLight.shadow.camera.top = 2;
-  dirLight.shadow.camera.bottom = - 2;
-  dirLight.shadow.camera.left = - 2;
-  dirLight.shadow.camera.right = 2;
+  dirLight.shadow.camera.top = shadowSize;
+  dirLight.shadow.camera.bottom = -shadowSize;
+  dirLight.shadow.camera.left = -shadowSize;
+  dirLight.shadow.camera.right = shadowSize;
+  dirLight.shadow.mapSize.set(8192, 8192);
   dirLight.shadow.camera.near = 0.1;
   dirLight.shadow.camera.far = 40;
   scene.add(dirLight);
@@ -180,6 +183,8 @@ function initThree() {
   mesh.rotation.x = - Math.PI / 2;
   mesh.receiveShadow = true;
   scene.add(mesh);
+
+  // scene.add(new THREE.CameraHelper(dirLight.shadow.camera))
 
   renderer.render(scene, camera);
 
