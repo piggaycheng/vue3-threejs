@@ -17,7 +17,6 @@ let model: THREE.Object3D,
   idleAction: THREE.AnimationAction,
   walkAction: THREE.AnimationAction,
   runAction: THREE.AnimationAction,
-  tPoseAction: THREE.AnimationAction,
   actionsMapping: Map<string, THREE.AnimationAction>,
   clock: THREE.Clock = new THREE.Clock()
 
@@ -25,8 +24,6 @@ const cubeControls = {
   x: 0,
   y: 0,
   z: 0,
-  xSpeed: 0.1,
-  zSpeed: 0.1,
   visible: false,
 };
 
@@ -39,6 +36,8 @@ const characterControls = {
   idleWeight: 1,
   walkWeight: 0,
   runWeight: 0,
+  xSpeed: 0.1,
+  zSpeed: 0.1,
 }
 
 const gui = new GUI();
@@ -50,24 +49,12 @@ cameraFolder.close();
 const cubeFolder = gui.addFolder('Cube');
 cubeFolder.add(cubeControls, 'x', -10, 10).onChange((value: number) => {
   cube.position.setX(value);
-  orbitControls.update();
-  render();
 });
 cubeFolder.add(cubeControls, 'y', -10, 10).onChange((value: number) => {
   cube.position.setY(value);
-  orbitControls.update();
-  render();
 });
 cubeFolder.add(cubeControls, 'z', -10, 10).onChange((value: number) => {
   cube.position.setZ(value);
-  orbitControls.update();
-  render();
-});
-cubeFolder.add(cubeControls, 'xSpeed', -1, 1).onChange((value: number) => {
-  cubeControls.xSpeed = value;
-});
-cubeFolder.add(cubeControls, 'zSpeed', -1, 1).onChange((value: number) => {
-  cubeControls.zSpeed = value;
 });
 cubeFolder.add(cubeControls, 'visible').onChange((value: boolean) => {
   cube.visible = value;
@@ -93,27 +80,33 @@ characterFolder.add(characterControls, 'runWeight', 0, 1).listen().onChange((val
   characterControls.runWeight = value;
   setWeight(runAction, value);
 });
+characterFolder.add(characterControls, 'xSpeed', 0, 1).onChange((value: number) => {
+  characterControls.xSpeed = value;
+});
+characterFolder.add(characterControls, 'zSpeed', 0, 1).onChange((value: number) => {
+  characterControls.zSpeed = value;
+});
 
 document.addEventListener('keydown', (event) => {
   let deltaX = 0;
   let deltaZ = 0;
   switch (event.key) {
     case 'w':
-      deltaZ = -1 * cubeControls.zSpeed;
+      deltaZ = -1 * characterControls.zSpeed;
       break;
     case 's':
-      deltaZ = cubeControls.zSpeed;
+      deltaZ = characterControls.zSpeed;
       break;
     case 'a':
-      deltaX = -1 * cubeControls.xSpeed;
+      deltaX = -1 * characterControls.xSpeed;
       break;
     case 'd':
-      deltaX = cubeControls.xSpeed;
+      deltaX = characterControls.xSpeed;
       break;
   }
 
-  cube.position.setX(cube.position.x + deltaX);
-  cube.position.setZ(cube.position.z + deltaZ);
+  model.position.setX(model.position.x + deltaX);
+  model.position.setZ(model.position.z + deltaZ);
 
   if (!cameraControls.lock) {
     camera.position.setX(camera.position.x + deltaX);
@@ -134,9 +127,9 @@ function initThree() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xa0a0a0);
   scene.fog = new THREE.Fog(0xa0a0a0, 10, 50);
+
   camera = new THREE.PerspectiveCamera(75, threeCanvas.value!.clientWidth / threeCanvas.value!.clientHeight, 0.1, 1000);
   camera.position.set(5, 5, 5)
-  camera.lookAt(scene.position);
 
   const axesHelper = new THREE.AxesHelper(5);
   scene.add(axesHelper);
@@ -179,8 +172,7 @@ function initThree() {
   // scene.add(gridHelper);
 
   orbitControls = new OrbitControls(camera, renderer.domElement);
-  orbitControls.target = cube.position;
-  orbitControls.listenToKeyEvents(window);
+  // orbitControls.target = cube.position;
 
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshPhongMaterial({ color: 0xcbcbcb, depthWrite: false }));
   mesh.rotation.x = - Math.PI / 2;
@@ -219,6 +211,8 @@ function loadModel() {
   loader.load('3dModels/Soldier.glb', (gltf) => {
     model = gltf.scene;
     scene.add(model);
+
+    orbitControls.target = model.position;
 
     mixer = new THREE.AnimationMixer(model);
     idleAction = mixer.clipAction(gltf.animations[0]);
