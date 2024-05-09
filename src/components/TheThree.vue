@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import * as THREE from 'three';
 import GUI from 'lil-gui';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -128,6 +128,10 @@ document.addEventListener('keydown', (event) => {
 onMounted(() => {
   initThree();
   loadModel();
+});
+
+onUnmounted(() => {
+  gui.destroy();
 });
 
 function initThree() {
