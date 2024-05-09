@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import GUI from 'lil-gui';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { mod } from 'three/examples/jsm/nodes/Nodes.js';
 
 const threeCanvas = ref<HTMLDivElement>();
 let camera: THREE.PerspectiveCamera,
@@ -188,6 +189,7 @@ function initThree() {
     cube.rotation.x += 0.01;
     cube.rotation.y += 0.01;
 
+    if (model) orbitControls.target.copy(model.position);
     orbitControls.update();
 
     const mixerUpdateDelta = clock.getDelta();
@@ -211,7 +213,7 @@ function loadModel() {
     model = gltf.scene;
     scene.add(model);
 
-    orbitControls.target = model.position;
+    orbitControls.target.copy(model.position);
 
     mixer = new THREE.AnimationMixer(model);
     idleAction = mixer.clipAction(gltf.animations[0]);
