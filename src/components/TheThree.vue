@@ -11,6 +11,14 @@ let camera: THREE.PerspectiveCamera,
   renderer: THREE.WebGLRenderer,
   orbitControls: OrbitControls,
   cube: THREE.Mesh;
+let model: THREE.Object3D,
+  mixer: THREE.AnimationMixer,
+  idleAction: THREE.AnimationAction,
+  walkAction: THREE.AnimationAction,
+  runAction: THREE.AnimationAction,
+  tPoseAction: THREE.AnimationAction,
+  actions: THREE.AnimationAction[],
+  clock: THREE.Clock = new THREE.Clock()
 
 const cubeControls = {
   x: 0,
@@ -24,6 +32,10 @@ const cubeControls = {
 const cameraControls = {
   lock: true
 };
+
+const characterControls = {
+  action: 'idle'
+}
 
 const gui = new GUI();
 const cameraFolder = gui.addFolder('Camera');
@@ -54,6 +66,36 @@ cubeFolder.add(cubeControls, 'zSpeed', -1, 1).onChange((value: number) => {
 });
 cubeFolder.add(cubeControls, 'visible').onChange((value: boolean) => {
   cube.visible = value;
+});
+const characterFolder = gui.addFolder('Character');
+characterFolder.add(characterControls, 'action', ['Idle', 'Walk', 'Run', 'TPose']).onChange((value: string) => {
+  characterControls.action = value;
+  switch (value) {
+    case 'Idle':
+      idleAction.play();
+      walkAction.stop();
+      runAction.stop();
+      tPoseAction.stop();
+      break;
+    case 'Walk':
+      idleAction.stop();
+      walkAction.play();
+      runAction.stop();
+      tPoseAction.stop();
+      break;
+    case 'Run':
+      idleAction.stop();
+      walkAction.stop();
+      runAction.play();
+      tPoseAction.stop();
+      break;
+    case 'TPose':
+      idleAction.stop();
+      walkAction.stop();
+      runAction.stop();
+      tPoseAction.play();
+      break;
+  }
 });
 
 document.addEventListener('keydown', (event) => {
@@ -157,6 +199,9 @@ function initThree() {
 
     orbitControls.update();
 
+    const mixerUpdateDelta = clock.getDelta();
+    if (mixer) mixer.update(mixerUpdateDelta);
+
     render();
   }
 }
@@ -168,8 +213,14 @@ function render() {
 function loadModel() {
   const loader = new GLTFLoader();
   loader.load('3dModels/Soldier.glb', (gltf) => {
-    const model = gltf.scene;
+    model = gltf.scene;
     scene.add(model);
+
+    mixer = new THREE.AnimationMixer(model);
+    idleAction = mixer.clipAction(gltf.animations[0]);
+    walkAction = mixer.clipAction(gltf.animations[3]);
+    runAction = mixer.clipAction(gltf.animations[1]);
+    tPoseAction = mixer.clipAction(gltf.animations[2]);
 
     model.traverse(function (object) {
       if ((object as THREE.Mesh).isMesh) object.castShadow = true;
