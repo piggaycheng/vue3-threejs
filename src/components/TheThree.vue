@@ -4,7 +4,6 @@ import * as THREE from 'three';
 import GUI from 'lil-gui';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { l } from 'node_modules/vite/dist/node/types.d-aGj9QkWt';
 
 const threeCanvas = ref<HTMLDivElement>();
 let camera: THREE.PerspectiveCamera,
