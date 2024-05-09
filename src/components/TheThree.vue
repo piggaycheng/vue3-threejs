@@ -34,7 +34,7 @@ const cameraControls = {
 };
 
 const characterControls = {
-  action: 'idle'
+  action: 'TPose'
 }
 
 const gui = new GUI();
