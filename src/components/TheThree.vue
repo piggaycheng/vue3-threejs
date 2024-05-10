@@ -140,6 +140,7 @@ function initThree() {
   renderer = new THREE.WebGLRenderer();
   renderer.setSize(threeCanvas.value!.clientWidth, threeCanvas.value!.clientHeight);
   renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   threeCanvas.value!.appendChild(renderer.domElement);
 
   const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -166,7 +167,6 @@ function initThree() {
   dirLight.shadow.camera.bottom = -shadowSize;
   dirLight.shadow.camera.left = -shadowSize;
   dirLight.shadow.camera.right = shadowSize;
-  dirLight.shadow.mapSize.set(8192, 8192);
   dirLight.shadow.camera.near = 0.1;
   dirLight.shadow.camera.far = 40;
   scene.add(dirLight);
