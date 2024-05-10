@@ -5,6 +5,7 @@ import GUI from 'lil-gui';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import Stats from 'stats.js'
+import * as TWEEN from '@tweenjs/tween.js'
 
 const threeCanvas = ref<HTMLDivElement>();
 let camera: THREE.PerspectiveCamera,
@@ -131,6 +132,9 @@ document.addEventListener('click', (event: MouseEvent) => {
   if (intersects.length > 0) {
     clickedPosition = intersects[0].point;
   }
+
+  moveModel();
+  rotateModel();
 });
 
 onMounted(() => {
@@ -226,8 +230,10 @@ function initThree() {
     if (walkAction) characterControls.walkWeight = walkAction.getEffectiveWeight();
     if (runAction) characterControls.runWeight = runAction.getEffectiveWeight();
 
-    render();
     stats.update();
+    TWEEN.update();
+
+    render();
   }
 }
 
@@ -280,6 +286,18 @@ function setWeight(action: THREE.AnimationAction, weight: number) {
   action.enabled = true;
   action.setEffectiveTimeScale(1);
   action.setEffectiveWeight(weight);
+}
+
+function moveModel() {
+  new TWEEN.Tween(model.position)
+    .to(clickedPosition, 1000)
+    .start();
+}
+
+function rotateModel() {
+  //   const quaternion = new THREE.Quaternion();
+  //   model.getWorldQuaternion(quaternion);
+  //   console.log(quaternion);
 }
 
 </script>
