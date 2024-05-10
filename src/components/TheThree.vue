@@ -19,7 +19,11 @@ let model: THREE.Object3D,
   walkAction: THREE.AnimationAction,
   runAction: THREE.AnimationAction,
   actionsMapping: Map<string, THREE.AnimationAction>,
-  clock: THREE.Clock = new THREE.Clock()
+  clock: THREE.Clock = new THREE.Clock();
+let raycaster: THREE.Raycaster = new THREE.Raycaster(),
+  pointer = new THREE.Vector2(),
+  planeMesh: THREE.Mesh,
+  clickedPosition: THREE.Vector3;
 
 const cubeControls = {
   x: 0,
@@ -118,6 +122,17 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
+document.addEventListener('click', (event: MouseEvent) => {
+  pointer.x = (event.clientX / threeCanvas.value!.clientWidth) * 2 - 1;
+  pointer.y = - (event.clientY / threeCanvas.value!.clientHeight) * 2 + 1;
+
+  raycaster.setFromCamera(pointer, camera);
+  const intersects = raycaster.intersectObject(planeMesh, false)
+  if (intersects.length > 0) {
+    clickedPosition = intersects[0].point;
+  }
+});
+
 onMounted(() => {
   initThree();
   loadModel();
@@ -161,7 +176,7 @@ function initThree() {
   // spotLight.target = cube;
   // scene.add(spotLight);
   const dirLight = new THREE.DirectionalLight(0xffffff, 3);
-  const shadowSize = 30;
+  const shadowSize = 2;
   dirLight.position.set(- 3, 10, - 10);
   dirLight.castShadow = true;
   dirLight.shadow.camera.top = shadowSize;
@@ -180,10 +195,10 @@ function initThree() {
   orbitControls = new OrbitControls(camera, renderer.domElement);
   // orbitControls.target = cube.position;
 
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshPhongMaterial({ color: 0xcbcbcb, depthWrite: false }));
-  mesh.rotation.x = - Math.PI / 2;
-  mesh.receiveShadow = true;
-  scene.add(mesh);
+  planeMesh = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshPhongMaterial({ color: 0xcbcbcb, depthWrite: false }));
+  planeMesh.rotation.x = - Math.PI / 2;
+  planeMesh.receiveShadow = true;
+  scene.add(planeMesh);
 
   // scene.add(new THREE.CameraHelper(dirLight.shadow.camera))
 
