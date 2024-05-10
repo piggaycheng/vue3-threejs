@@ -4,14 +4,15 @@ import * as THREE from 'three';
 import GUI from 'lil-gui';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { dir } from 'console';
+import Stats from 'stats.js'
 
 const threeCanvas = ref<HTMLDivElement>();
 let camera: THREE.PerspectiveCamera,
   scene: THREE.Scene,
   renderer: THREE.WebGLRenderer,
   orbitControls: OrbitControls,
-  cube: THREE.Mesh;
+  cube: THREE.Mesh,
+  stats: Stats;
 let model: THREE.Object3D,
   mixer: THREE.AnimationMixer,
   idleAction: THREE.AnimationAction,
@@ -160,7 +161,7 @@ function initThree() {
   // spotLight.target = cube;
   // scene.add(spotLight);
   const dirLight = new THREE.DirectionalLight(0xffffff, 3);
-  const shadowSize = 50;
+  const shadowSize = 30;
   dirLight.position.set(- 3, 10, - 10);
   dirLight.castShadow = true;
   dirLight.shadow.camera.top = shadowSize;
@@ -186,6 +187,10 @@ function initThree() {
 
   // scene.add(new THREE.CameraHelper(dirLight.shadow.camera))
 
+  stats = new Stats();
+  stats.showPanel(0);
+  threeCanvas.value!.appendChild(stats.dom);
+
   renderer.render(scene, camera);
 
   animate();
@@ -207,6 +212,7 @@ function initThree() {
     if (runAction) characterControls.runWeight = runAction.getEffectiveWeight();
 
     render();
+    stats.update();
   }
 }
 
