@@ -24,6 +24,7 @@ let model: THREE.Object3D,
 let raycaster: THREE.Raycaster = new THREE.Raycaster(),
   pointer = new THREE.Vector2(),
   planeMesh: THREE.Mesh,
+  // arrow: THREE.ArrowHelper,
   clickedPosition: THREE.Vector3;
 
 const cubeControls = {
@@ -133,8 +134,8 @@ document.addEventListener('click', (event: MouseEvent) => {
     clickedPosition = intersects[0].point;
   }
 
-  moveModel();
   rotateModel();
+  moveModel();
 });
 
 onMounted(() => {
@@ -191,10 +192,10 @@ function initThree() {
   dirLight.shadow.camera.far = 40;
   scene.add(dirLight);
 
-  // const size = 10;
-  // const divisions = 10;
-  // const gridHelper = new THREE.GridHelper(size, divisions);
-  // scene.add(gridHelper);
+  const size = 10;
+  const divisions = 10;
+  const gridHelper = new THREE.GridHelper(size, divisions);
+  scene.add(gridHelper);
 
   orbitControls = new OrbitControls(camera, renderer.domElement);
   // orbitControls.target = cube.position;
@@ -233,6 +234,11 @@ function initThree() {
     stats.update();
     TWEEN.update();
 
+    // if (arrow) {
+    //   arrow.position.copy(model.position);
+    //   arrow.setDirection(model.getWorldDirection(new THREE.Vector3()));
+    // }
+
     render();
   }
 }
@@ -268,6 +274,10 @@ function loadModel() {
     model.traverse(function (object) {
       if ((object as THREE.Mesh).isMesh) object.castShadow = true;
     });
+
+    // arrow = new THREE.ArrowHelper(model.getWorldDirection(new THREE.Vector3()), model.position, 1, 0xff0000);
+    // scene.add(arrow);
+
     console.log(gltf);
   });
 }
@@ -290,14 +300,26 @@ function setWeight(action: THREE.AnimationAction, weight: number) {
 
 function moveModel() {
   new TWEEN.Tween(model.position)
-    .to(clickedPosition, 1000)
+    .to(clickedPosition, 3000)
     .start();
 }
 
 function rotateModel() {
-  //   const quaternion = new THREE.Quaternion();
-  //   model.getWorldQuaternion(quaternion);
-  //   console.log(quaternion);
+  const modelDirection = new THREE.Vector3();
+  model.getWorldDirection(modelDirection);
+  modelDirection.multiplyScalar(-1);
+  const targetDirection = new THREE.Vector3().subVectors(clickedPosition, model.position).normalize();
+  const angle = modelDirection.angleTo(targetDirection);
+  const axis = new THREE.Vector3().crossVectors(modelDirection, targetDirection).normalize();
+  let signedAngle = axis.y < 0 ? -angle : angle;
+  // model.rotateOnWorldAxis(axis, angle);
+
+  new TWEEN.Tween(model.rotation)
+    .to({ y: model.rotation.y + signedAngle }, 1000)
+    .onUpdate((object) => {
+      model.rotation.y = object.y;
+    })
+    .start();
 }
 
 </script>
