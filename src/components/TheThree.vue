@@ -40,7 +40,7 @@ const cubeControls = {
 };
 
 const cameraControls = {
-  lock: true
+  lock: false
 };
 
 const characterControls = {
@@ -56,6 +56,8 @@ const gui = new GUI();
 const cameraFolder = gui.addFolder('Camera');
 cameraFolder.add(cameraControls, 'lock').onChange((value: boolean) => {
   cameraControls.lock = value;
+  if (value) model.add(camera);
+  else scene.add(camera);
 });
 cameraFolder.close();
 const cubeFolder = gui.addFolder('Cube');
@@ -121,12 +123,7 @@ document.addEventListener('keydown', (event) => {
       break;
   }
 
-
   model.rotation.y += deltaRadian;
-
-  if (!cameraControls.lock && (event.key === 'w' || event.key === 's')) {
-    camera.position.add(direction);
-  }
 });
 
 document.addEventListener('click', (event: MouseEvent) => {
