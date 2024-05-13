@@ -135,9 +135,13 @@ document.addEventListener('click', (event: MouseEvent) => {
 
   raycaster.setFromCamera(pointer, camera);
   const intersects = raycaster.intersectObject(planeMesh, false)
-  console.log(intersects);
+
   if (intersects.length > 0) {
     clickedPosition = intersects[0].point;
+    if (lastAction !== 'runAction') {
+      executeCrossFade(actionsMapping.get(lastAction)!, runAction, 1)
+      lastAction = 'runAction';
+    };
     rotateModel();
     moveModel();
   }
