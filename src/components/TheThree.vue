@@ -74,7 +74,7 @@ cubeFolder.add(cubeControls, 'visible').onChange((value: boolean) => {
 cubeFolder.close();
 const characterFolder = gui.addFolder('Character');
 let lastAction = 'idleAction';
-characterFolder.add(characterControls, 'action', { 'Idle': 'idleAction', 'Walk': 'walkAction', 'Run': 'runAction' }).onChange((value: string) => {
+characterFolder.add(characterControls, 'action', { 'Idle': 'idleAction', 'Walk': 'walkAction', 'Run': 'runAction' }).listen().onChange((value: string) => {
   executeCrossFade(actionsMapping.get(lastAction)!, actionsMapping.get(value)!, 1);
 
   characterControls.action = value;
@@ -245,6 +245,8 @@ function initThree() {
     //   arrow.setDirection(model.getWorldDirection(new THREE.Vector3()));
     // }
 
+    updateActionDropdown();
+
     render();
   }
 }
@@ -344,6 +346,16 @@ function initLine() {
   geometry.setPositions(positions);
   var line = new Line2(geometry, lineMaterial);
   scene.add(line);
+}
+
+function updateActionDropdown() {
+  if (characterControls.runWeight === 1) {
+    characterControls.action = 'Run';
+  } else if (characterControls.walkWeight === 1) {
+    characterControls.action = 'Walk';
+  } else {
+    characterControls.action = 'Idle';
+  }
 }
 
 </script>
