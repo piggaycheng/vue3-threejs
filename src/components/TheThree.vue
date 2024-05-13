@@ -25,7 +25,9 @@ let raycaster: THREE.Raycaster = new THREE.Raycaster(),
   pointer = new THREE.Vector2(),
   planeMesh: THREE.Mesh,
   // arrow: THREE.ArrowHelper,
-  clickedPosition: THREE.Vector3;
+  clickedPosition: THREE.Vector3,
+  moveTween: TWEEN.Tween<THREE.Vector3>,
+  rotateTween: TWEEN.Tween<THREE.Euler>;
 
 const cubeControls = {
   x: 0,
@@ -181,7 +183,7 @@ function initThree() {
   // spotLight.target = cube;
   // scene.add(spotLight);
   const dirLight = new THREE.DirectionalLight(0xffffff, 3);
-  const shadowSize = 2;
+  const shadowSize = 20;
   dirLight.position.set(- 3, 10, - 10);
   dirLight.castShadow = true;
   dirLight.shadow.camera.top = shadowSize;
@@ -299,12 +301,16 @@ function setWeight(action: THREE.AnimationAction, weight: number) {
 }
 
 function moveModel() {
-  new TWEEN.Tween(model.position)
-    .to(clickedPosition, 3000)
+  if (moveTween) moveTween.stop();
+
+  moveTween = new TWEEN.Tween(model.position)
+    .to(clickedPosition, 1500)
     .start();
 }
 
 function rotateModel() {
+  if (rotateTween) rotateTween.stop();
+
   const modelDirection = new THREE.Vector3();
   model.getWorldDirection(modelDirection);
   modelDirection.multiplyScalar(-1);
@@ -314,8 +320,8 @@ function rotateModel() {
   let signedAngle = axis.y < 0 ? -angle : angle;
   // model.rotateOnWorldAxis(axis, angle);
 
-  new TWEEN.Tween(model.rotation)
-    .to({ y: model.rotation.y + signedAngle }, 1000)
+  rotateTween = new TWEEN.Tween(model.rotation)
+    .to({ y: model.rotation.y + signedAngle }, 500)
     .onUpdate((object) => {
       model.rotation.y = object.y;
     })
