@@ -6,6 +6,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import Stats from 'stats.js'
 import * as TWEEN from '@tweenjs/tween.js'
+import { Line2 } from 'three/addons/lines/Line2.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 
 const threeCanvas = ref<HTMLDivElement>();
 let camera: THREE.PerspectiveCamera,
@@ -143,6 +146,7 @@ document.addEventListener('click', (event: MouseEvent) => {
 onMounted(() => {
   initThree();
   loadModel();
+  initLine();
 });
 
 onUnmounted(() => {
@@ -326,6 +330,20 @@ function rotateModel() {
       model.rotation.y = object.y;
     })
     .start();
+}
+
+function initLine() {
+  const lineMaterial = new LineMaterial({
+    color: 0x00AA00,
+    linewidth: 10,
+    alphaToCoverage: false,
+    resolution: new THREE.Vector2(threeCanvas.value!.clientWidth, threeCanvas.value!.clientHeight),
+  });
+  const geometry = new LineGeometry();
+  const positions = [-5, 0, -5, -5, 0, 5, 5, 0, 5, 5, 0, -5, -5, 0, -5]
+  geometry.setPositions(positions);
+  var line = new Line2(geometry, lineMaterial);
+  scene.add(line);
 }
 
 </script>
