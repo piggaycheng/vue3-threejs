@@ -9,8 +9,10 @@ import * as TWEEN from '@tweenjs/tween.js'
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
 
 const threeCanvas = ref<HTMLDivElement>();
+const card = ref<HTMLDivElement>();
 let camera: THREE.PerspectiveCamera,
   scene: THREE.Scene,
   renderer: THREE.WebGLRenderer,
@@ -31,6 +33,9 @@ let raycaster: THREE.Raycaster = new THREE.Raycaster(),
   clickedPosition: THREE.Vector3,
   moveTween: TWEEN.Tween<THREE.Vector3>,
   rotateTween: TWEEN.Tween<THREE.Euler>;
+
+let scene2: THREE.Scene,
+  css3DRenderer: CSS3DRenderer;
 
 const cubeControls = {
   x: 0,
@@ -148,6 +153,11 @@ onMounted(() => {
   initThree();
   loadModel();
   initLine();
+
+  initCss3DRenderer();
+  createPlane();
+
+  animate();
 });
 
 onUnmounted(() => {
@@ -204,7 +214,7 @@ function initThree() {
   const gridHelper = new THREE.GridHelper(size, divisions);
   scene.add(gridHelper);
 
-  orbitControls = new OrbitControls(camera, renderer.domElement);
+  // orbitControls = new OrbitControls(camera, renderer.domElement);  // OrbitControls for WebGLRenderer
   // orbitControls.target = cube.position;
 
   planeMesh = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshPhongMaterial({ color: 0xcbcbcb, depthWrite: false }));
@@ -219,37 +229,36 @@ function initThree() {
   threeCanvas.value!.appendChild(stats.dom);
 
   renderer.render(scene, camera);
+}
 
-  animate();
+function animate() {
+  requestAnimationFrame(animate);
 
-  function animate() {
-    requestAnimationFrame(animate);
+  cube.rotation.x += 0.01;
+  cube.rotation.y += 0.01;
 
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
+  if (model) orbitControls.target.copy(model.position);
+  orbitControls.update();
 
-    if (model) orbitControls.target.copy(model.position);
-    orbitControls.update();
+  const mixerUpdateDelta = clock.getDelta();
+  if (mixer) mixer.update(mixerUpdateDelta);
 
-    const mixerUpdateDelta = clock.getDelta();
-    if (mixer) mixer.update(mixerUpdateDelta);
+  if (idleAction) characterControls.idleWeight = idleAction.getEffectiveWeight();
+  if (walkAction) characterControls.walkWeight = walkAction.getEffectiveWeight();
+  if (runAction) characterControls.runWeight = runAction.getEffectiveWeight();
 
-    if (idleAction) characterControls.idleWeight = idleAction.getEffectiveWeight();
-    if (walkAction) characterControls.walkWeight = walkAction.getEffectiveWeight();
-    if (runAction) characterControls.runWeight = runAction.getEffectiveWeight();
+  stats.update();
+  TWEEN.update();
 
-    stats.update();
-    TWEEN.update();
+  // if (arrow) {
+  //   arrow.position.copy(model.position);
+  //   arrow.setDirection(model.getWorldDirection(new THREE.Vector3()));
+  // }
 
-    // if (arrow) {
-    //   arrow.position.copy(model.position);
-    //   arrow.setDirection(model.getWorldDirection(new THREE.Vector3()));
-    // }
+  updateActionDropdown();
 
-    updateActionDropdown();
-
-    render();
-  }
+  render();
+  render2();
 }
 
 function render() {
@@ -359,10 +368,38 @@ function updateActionDropdown() {
   }
 }
 
+function initCss3DRenderer() {
+  scene2 = new THREE.Scene();
+  css3DRenderer = new CSS3DRenderer();
+  css3DRenderer.setSize(threeCanvas.value!.clientWidth, threeCanvas.value!.clientHeight);
+  css3DRenderer.domElement.style.position = 'absolute';
+  css3DRenderer.domElement.style.top = '0px';
+  threeCanvas.value!.appendChild(css3DRenderer.domElement);
+
+  orbitControls = new OrbitControls(camera, css3DRenderer.domElement);
+}
+
+function createPlane() {
+  const plane = card.value!;
+  plane.style.width = '100px';
+  plane.style.height = '100px';
+  plane.style.backgroundColor = 'red';
+  plane.style.opacity = '0.8';
+  const css3DObject = new CSS3DObject(plane);
+  css3DObject.position.set(0, 3, 0);
+  css3DObject.scale.set(0.01, 0.01, 0.01);
+  scene2.add(css3DObject);
+}
+
+function render2() {
+  css3DRenderer.render(scene2, camera);
+}
+
 </script>
 
 <template>
   <div ref="threeCanvas" class="three-container">
+    <div ref="card">你好~</div>
   </div>
 </template>
 
