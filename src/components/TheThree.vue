@@ -109,7 +109,7 @@ characterFolder.add(characterControls, 'speed', 0, 1).onChange((value: number) =
 characterFolder.add(characterControls, 'rotationSpeed', 0, 1).onChange((value: number) => {
   characterControls.rotationSpeed = value;
 });
-characterFolder.add(characterControls, 'runInCircles')
+characterFolder.add(characterControls, 'runInCircles').name('Run in Circles');
 
 gui.domElement.addEventListener('mouseenter', () => {
   enableRaycasting = false;
@@ -146,6 +146,7 @@ document.addEventListener('keydown', (event) => {
 
 document.addEventListener('click', (event: MouseEvent) => {
   if (!enableRaycasting) return;
+  if (isRunInCircles) isRunInCircles = false;
 
   pointer.x = (event.clientX / threeCanvas.value!.clientWidth) * 2 - 1;
   pointer.y = - (event.clientY / threeCanvas.value!.clientHeight) * 2 + 1;
