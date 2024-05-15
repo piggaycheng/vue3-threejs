@@ -10,6 +10,15 @@ import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+
+interface ModelData {
+  mixer: THREE.AnimationMixer,
+  model: THREE.Object3D,
+  rotateTween?: TWEEN.Tween<THREE.Euler>,
+  moveTween?: TWEEN.Tween<THREE.Vector3>,
+  isWalking: boolean,
+}
 
 const threeCanvas = ref<HTMLDivElement>();
 const card = ref<HTMLDivElement>();
@@ -20,6 +29,7 @@ let camera: THREE.PerspectiveCamera,
   cube: THREE.Mesh,
   stats: Stats;
 let model: THREE.Object3D,
+  modelAnimations: THREE.AnimationClip[],
   mixer: THREE.AnimationMixer,
   idleAction: THREE.AnimationAction,
   walkAction: THREE.AnimationAction,
@@ -36,6 +46,7 @@ let raycaster: THREE.Raycaster = new THREE.Raycaster(),
   clickedPosition: THREE.Vector3,
   moveTween: TWEEN.Tween<THREE.Vector3>,
   rotateTween: TWEEN.Tween<THREE.Euler>;
+let modelDatas: ModelData[] = [];
 
 let scene2: THREE.Scene,
   css3DRenderer: CSS3DRenderer;
@@ -58,7 +69,8 @@ const characterControls = {
   runWeight: 0,
   speed: 0.1,
   rotationSpeed: 0.1,
-  runInCircles: runInCircles
+  runInCircles: runInCircles,
+  addModel: addModel,
 }
 
 const gui = new GUI();
@@ -110,6 +122,7 @@ characterFolder.add(characterControls, 'rotationSpeed', 0, 1).onChange((value: n
   characterControls.rotationSpeed = value;
 });
 characterFolder.add(characterControls, 'runInCircles').name('Run in Circles');
+characterFolder.add(characterControls, 'addModel').name('Add Model');
 
 gui.domElement.addEventListener('mouseenter', () => {
   enableRaycasting = false;
@@ -160,8 +173,8 @@ document.addEventListener('click', (event: MouseEvent) => {
       executeCrossFade(actionsMapping.get(lastAction)!, runAction, 1)
       lastAction = 'runAction';
     };
-    rotateModel(clickedPosition);
-    moveModel(clickedPosition);
+    rotateModel(clickedPosition, model, rotateTween);
+    moveModel(clickedPosition, model, moveTween);
   }
 });
 
@@ -279,8 +292,15 @@ function animate() {
   if (isRunInCircles) {
     if (model.position.distanceTo(circlePoints[0]) < 0.1) {
       circlePoints.push(circlePoints.shift()!);
-      rotateModel(circlePoints[0]);
-      moveModel(circlePoints[0]);
+      rotateModel(circlePoints[0], model, rotateTween);
+      moveModel(circlePoints[0], model, moveTween);
+    }
+  }
+
+  for (const modelData of modelDatas) {
+    modelData.mixer.update(mixerUpdateDelta);
+    if (!modelData.isWalking) {
+      randomWalk(modelData);
     }
   }
 }
@@ -293,14 +313,15 @@ function loadModel() {
   const loader = new GLTFLoader();
   loader.load('3dModels/Soldier.glb', (gltf) => {
     model = gltf.scene;
+    modelAnimations = gltf.animations;
     scene.add(model);
 
     orbitControls.target.copy(model.position);
 
     mixer = new THREE.AnimationMixer(model);
-    idleAction = mixer.clipAction(gltf.animations[0]);
-    walkAction = mixer.clipAction(gltf.animations[3]);
-    runAction = mixer.clipAction(gltf.animations[1]);
+    idleAction = mixer.clipAction(modelAnimations[0]);
+    walkAction = mixer.clipAction(modelAnimations[3]);
+    runAction = mixer.clipAction(modelAnimations[1]);
 
     actionsMapping = new Map([
       ['idleAction', idleAction],
@@ -340,15 +361,18 @@ function setWeight(action: THREE.AnimationAction, weight: number) {
   action.setEffectiveWeight(weight);
 }
 
-function moveModel(destination: THREE.Vector3) {
+function moveModel(destination: THREE.Vector3, model: THREE.Object3D, moveTween?: TWEEN.Tween<THREE.Vector3>, modelData?: ModelData, duration = 1500) {
   if (moveTween) moveTween.stop();
 
-  moveTween = new TWEEN.Tween(model.position)
-    .to(destination, 1500)
+  const newMoveTween = new TWEEN.Tween(model.position)
+    .to(destination, duration)
     .start();
+
+  if (modelData) modelData.moveTween = newMoveTween;
+  else moveTween = newMoveTween;
 }
 
-function rotateModel(destination: THREE.Vector3) {
+function rotateModel(destination: THREE.Vector3, model: THREE.Object3D, rotateTween?: TWEEN.Tween<THREE.Euler>, modelData?: ModelData, duration = 500) {
   if (rotateTween) rotateTween.stop();
 
   const modelDirection = new THREE.Vector3();
@@ -360,12 +384,15 @@ function rotateModel(destination: THREE.Vector3) {
   let signedAngle = axis.y < 0 ? -angle : angle;
   // model.rotateOnWorldAxis(axis, angle);
 
-  rotateTween = new TWEEN.Tween(model.rotation)
-    .to({ y: model.rotation.y + signedAngle }, 500)
+  const newRotateTween = new TWEEN.Tween(model.rotation)
+    .to({ y: model.rotation.y + signedAngle }, duration)
     .onUpdate((object) => {
       model.rotation.y = object.y;
     })
     .start();
+
+  if (modelData) modelData.rotateTween = newRotateTween;
+  else rotateTween = newRotateTween;
 }
 
 function initLine() {
@@ -404,8 +431,35 @@ function runInCircles() {
     new THREE.Vector3(-5, 0, -5),
     new THREE.Vector3(-5, 0, 5),
   ];
-  rotateModel(circlePoints[0]);
-  moveModel(circlePoints[0]);
+  rotateModel(circlePoints[0], model, rotateTween);
+  moveModel(circlePoints[0], model, moveTween);
+}
+
+function addModel() {
+  const clonedModel = SkeletonUtils.clone(model);
+  const mixer = new THREE.AnimationMixer(clonedModel);
+  const walkAction = mixer.clipAction(modelAnimations[3]);
+  walkAction.play();
+  scene.add(clonedModel);
+
+  const modelData: ModelData = {
+    mixer: mixer,
+    model: clonedModel,
+    isWalking: false,
+  };
+  modelDatas.push(modelData);
+}
+
+function randomWalk(modelData: ModelData) {
+  const randomX = Math.random() * 10 - 5;
+  const randomZ = Math.random() * 10 - 5;
+  const destination = new THREE.Vector3(randomX, 0, randomZ);
+  moveModel(destination, modelData.model, modelData.moveTween, modelData, 3000);
+  rotateModel(destination, modelData.model, modelData.rotateTween, modelData);
+  modelData.isWalking = true;
+  if (modelData.moveTween) modelData.moveTween.onComplete(() => {
+    modelData.isWalking = false;
+  });
 }
 
 function initCss3DRenderer() {
