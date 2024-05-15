@@ -25,7 +25,9 @@ let model: THREE.Object3D,
   walkAction: THREE.AnimationAction,
   runAction: THREE.AnimationAction,
   actionsMapping: Map<string, THREE.AnimationAction>,
-  clock: THREE.Clock = new THREE.Clock();
+  clock: THREE.Clock = new THREE.Clock(),
+  isRunInCircles = false,
+  circlePoints: THREE.Vector3[];
 let raycaster: THREE.Raycaster = new THREE.Raycaster(),
   enableRaycasting = true,
   pointer = new THREE.Vector2(),
@@ -56,9 +58,7 @@ const characterControls = {
   runWeight: 0,
   speed: 0.1,
   rotationSpeed: 0.1,
-  runInCircles: function () {
-
-  }
+  runInCircles: runInCircles
 }
 
 const gui = new GUI();
@@ -146,6 +146,7 @@ document.addEventListener('keydown', (event) => {
 
 document.addEventListener('click', (event: MouseEvent) => {
   if (!enableRaycasting) return;
+
   pointer.x = (event.clientX / threeCanvas.value!.clientWidth) * 2 - 1;
   pointer.y = - (event.clientY / threeCanvas.value!.clientHeight) * 2 + 1;
 
@@ -273,6 +274,14 @@ function animate() {
 
   render();
   render2();
+
+  if (isRunInCircles) {
+    if (model.position.distanceTo(circlePoints[0]) < 0.1) {
+      circlePoints.push(circlePoints.shift()!);
+      rotateModel(circlePoints[0]);
+      moveModel(circlePoints[0]);
+    }
+  }
 }
 
 function render() {
@@ -380,6 +389,22 @@ function updateActionDropdown() {
   } else {
     characterControls.action = 'Idle';
   }
+}
+
+function runInCircles() {
+  if (lastAction !== 'runAction') {
+    executeCrossFade(actionsMapping.get(lastAction)!, runAction, 1)
+    lastAction = 'runAction';
+  };
+  isRunInCircles = true;
+  circlePoints = [
+    new THREE.Vector3(5, 0, 5),
+    new THREE.Vector3(5, 0, -5),
+    new THREE.Vector3(-5, 0, -5),
+    new THREE.Vector3(-5, 0, 5),
+  ];
+  rotateModel(circlePoints[0]);
+  moveModel(circlePoints[0]);
 }
 
 function initCss3DRenderer() {
