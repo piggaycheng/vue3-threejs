@@ -155,7 +155,7 @@ onMounted(() => {
   initLine();
 
   initCss3DRenderer();
-  createPlane();
+  create3dCard(card.value!, 100, 100, new THREE.Vector3(0, 3, -5), new THREE.Euler(0, 0, 0));
 
   animate();
 });
@@ -379,14 +379,16 @@ function initCss3DRenderer() {
   orbitControls = new OrbitControls(camera, css3DRenderer.domElement);
 }
 
-function createPlane() {
-  const plane = card.value!;
-  plane.style.width = '100px';
-  plane.style.height = '100px';
-  plane.style.backgroundColor = 'red';
-  plane.style.opacity = '0.8';
-  const css3DObject = new CSS3DObject(plane);
-  css3DObject.position.set(0, 3, 0);
+function create3dCard(dom: HTMLElement, width: number, height: number, position: THREE.Vector3, rotation: THREE.Euler) {
+  const card = dom;
+  card.style.width = `${width}px`;
+  card.style.height = `${height}px`;
+  card.style.backgroundColor = '#42d4f5';
+  card.style.opacity = '0.8';
+  card.style.borderRadius = '10px';
+  const css3DObject = new CSS3DObject(card);
+  css3DObject.position.copy(position);
+  css3DObject.rotation.copy(rotation);
   css3DObject.scale.set(0.01, 0.01, 0.01);
   scene2.add(css3DObject);
 }
