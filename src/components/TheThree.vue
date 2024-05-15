@@ -27,6 +27,7 @@ let model: THREE.Object3D,
   actionsMapping: Map<string, THREE.AnimationAction>,
   clock: THREE.Clock = new THREE.Clock();
 let raycaster: THREE.Raycaster = new THREE.Raycaster(),
+  enableRaycasting = true,
   pointer = new THREE.Vector2(),
   planeMesh: THREE.Mesh,
   // arrow: THREE.ArrowHelper,
@@ -55,6 +56,9 @@ const characterControls = {
   runWeight: 0,
   speed: 0.1,
   rotationSpeed: 0.1,
+  runInCircles: function () {
+
+  }
 }
 
 const gui = new GUI();
@@ -105,6 +109,15 @@ characterFolder.add(characterControls, 'speed', 0, 1).onChange((value: number) =
 characterFolder.add(characterControls, 'rotationSpeed', 0, 1).onChange((value: number) => {
   characterControls.rotationSpeed = value;
 });
+characterFolder.add(characterControls, 'runInCircles')
+
+gui.domElement.addEventListener('mouseenter', () => {
+  enableRaycasting = false;
+});
+
+gui.domElement.addEventListener('mouseleave', () => {
+  enableRaycasting = true;
+});
 
 document.addEventListener('keydown', (event) => {
   let deltaRadian = 0;
@@ -132,6 +145,7 @@ document.addEventListener('keydown', (event) => {
 });
 
 document.addEventListener('click', (event: MouseEvent) => {
+  if (!enableRaycasting) return;
   pointer.x = (event.clientX / threeCanvas.value!.clientWidth) * 2 - 1;
   pointer.y = - (event.clientY / threeCanvas.value!.clientHeight) * 2 + 1;
 
@@ -144,8 +158,8 @@ document.addEventListener('click', (event: MouseEvent) => {
       executeCrossFade(actionsMapping.get(lastAction)!, runAction, 1)
       lastAction = 'runAction';
     };
-    rotateModel();
-    moveModel();
+    rotateModel(clickedPosition);
+    moveModel(clickedPosition);
   }
 });
 
@@ -316,21 +330,21 @@ function setWeight(action: THREE.AnimationAction, weight: number) {
   action.setEffectiveWeight(weight);
 }
 
-function moveModel() {
+function moveModel(destination: THREE.Vector3) {
   if (moveTween) moveTween.stop();
 
   moveTween = new TWEEN.Tween(model.position)
-    .to(clickedPosition, 1500)
+    .to(destination, 1500)
     .start();
 }
 
-function rotateModel() {
+function rotateModel(destination: THREE.Vector3) {
   if (rotateTween) rotateTween.stop();
 
   const modelDirection = new THREE.Vector3();
   model.getWorldDirection(modelDirection);
   modelDirection.multiplyScalar(-1);
-  const targetDirection = new THREE.Vector3().subVectors(clickedPosition, model.position).normalize();
+  const targetDirection = new THREE.Vector3().subVectors(destination, model.position).normalize();
   const angle = modelDirection.angleTo(targetDirection);
   const axis = new THREE.Vector3().crossVectors(modelDirection, targetDirection).normalize();
   let signedAngle = axis.y < 0 ? -angle : angle;
